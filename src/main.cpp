@@ -6,7 +6,8 @@
 #include "write_payload.h"  // Include the new file
 #include <iostream>
 #include <vector>
-//test
+//test g++ -Iinclude -o build/RegistryPayloadStager.exe src/main.cpp src/registry_utils.cpp src/shellcode_handler.cpp src/rc4.cpp src/binary_signer.cpp src/write_payload.cpp -luser32
+
 unsigned char shellcode[] =
 "\x90\x90\x90\x90\x90\x90\x90\x90"  // NOP sled (doing nothing)
 "\xc3";
