@@ -1,4 +1,3 @@
-#pragma once
 #ifndef SHELLCODE_HANDLER_H
 #define SHELLCODE_HANDLER_H
 

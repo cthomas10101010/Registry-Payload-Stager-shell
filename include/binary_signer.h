@@ -1,4 +1,3 @@
-#pragma once
 #ifndef BINARY_SIGNER_H
 #define BINARY_SIGNER_H
 
