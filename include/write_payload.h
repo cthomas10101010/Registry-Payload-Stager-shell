@@ -5,7 +5,7 @@
 #include <windows.h>
 
 // Function to read shellcode from the registry
-BOOL ReadShellcodeFromRegistry(IN DWORD sPayloadSize, OUT PBYTE* ppPayload);
+//BOOL ReadShellcodeFromRegistry(IN DWORD sPayloadSize, OUT PBYTE* ppPayload);
 
 // Function to execute the shellcode
 BOOL RunShellcode(IN PVOID pDecryptedShellcode, IN SIZE_T sDecryptedShellcodeSize);
