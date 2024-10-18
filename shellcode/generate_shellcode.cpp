@@ -1,1 +1,1 @@
-Purpose: Tool to generate or modify shellcode as needed.
+//Purpose: Tool to generate or modify shellcode as needed.
